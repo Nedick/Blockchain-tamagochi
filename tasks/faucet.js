@@ -36,5 +36,5 @@ task("faucet", "Sends ETH and tokens to an address")
     const market = await ethers.getContractAt("Market", addresses.MarketAddress);
     await market.buy(receiver, { value: 1 });
 
-    console.log(`Transferred 1 ETH and 100 tokens to ${receiver}`);
+    console.log(`Transferred 1 ETH to ${receiver}`);
   });
