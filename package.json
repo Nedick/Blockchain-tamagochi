@@ -4,7 +4,7 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "console": "hardhat console",
-    "deploy": "hardhat run scripts/deploy.js"
+    "deploy": "hardhat --network localhost run scripts/deploy.js"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0"
