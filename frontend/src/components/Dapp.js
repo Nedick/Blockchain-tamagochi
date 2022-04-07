@@ -6,7 +6,9 @@ import { ethers } from "ethers";
 // We import the contract's artifacts and address here, as we are going to be
 // using them with ethers
 import FoodArtifacts from "../contracts/Food.json";
-import { FoodAddress } from "../contracts/contract-addresses.json";
+import MarketArtifacts from "../contracts/Market.json";
+import PetArtifacts from "../contracts/Pet.json";
+import { FoodAddress, MarketAddress, PetAddress } from "../contracts/contract-addresses.json";
 
 // All the logic of this dapp is contained in the Dapp component.
 // These other components are just presentational ones: they don't have any
@@ -15,6 +17,8 @@ import { NoWalletDetected } from "./NoWalletDetected";
 import { ConnectWallet } from "./ConnectWallet";
 import { Loading } from "./Loading";
 import { Transfer } from "./Transfer";
+import { Market } from "./Market";
+import { Pet } from "./Pet";
 import { TransactionErrorMessage } from "./TransactionErrorMessage";
 import { WaitingForTransactionMessage } from "./WaitingForTransactionMessage";
 import { NoTokensMessage } from "./NoTokensMessage";
@@ -156,6 +160,18 @@ export class Dapp extends React.Component {
                 tokenSymbol={this.state.tokenData.symbol}
               />
             )}
+              <Market
+                buy={(foodId, price) => this._buyFood(foodId, price)}
+                priceInWei={this.state.priceInWei}
+                tokenSymbol={this.state.tokenData.symbol}
+              />
+
+              <Pet
+                createPet={(owner, petId) => this._createPet(owner, petId)}
+                feed={(petId, amountOfFood) => this._feedPet(petId, amountOfFood)}
+                tokenSymbol={this.state.tokenData.symbol}
+                ownerAddress={this.state.selectedAddress}
+              />
           </div>
         </div>
       </div>
@@ -236,7 +252,17 @@ export class Dapp extends React.Component {
       this._provider.getSigner(0)
     );
 
-    console.log(this._foodContract);
+    this._marketContract = new ethers.Contract(
+      MarketAddress,
+      MarketArtifacts.abi,
+      this._provider.getSigner(0)
+    );
+
+    this._petContract = new ethers.Contract(
+      PetAddress,
+      PetArtifacts.abi,
+      this._provider.getSigner(0)
+    );
   }
 
   // The next two methods are needed to start and stop polling data. While
@@ -263,14 +289,13 @@ export class Dapp extends React.Component {
   async _getTokenData() {
     const name = await this._foodContract.name();
     const symbol = await this._foodContract.symbol();
+    const priceInWei = await this._marketContract._weiToFoodDivider();
 
-    this.setState({ tokenData: { name, symbol } });
+    this.setState({ tokenData: { name, symbol }, priceInWei });
   }
 
   async _updateBalance() {
-    console.log(this.state.selectedAddress);
     const balance = await this._foodContract.balanceOf(this.state.selectedAddress);
-    console.log(balance);
     this.setState({ balance });
   }
 
@@ -300,6 +325,147 @@ export class Dapp extends React.Component {
       // We send the transaction, and save its hash in the Dapp's state. This
       // way we can indicate that we are waiting for it to be mined.
       const tx = await this._foodContract.transfer(to, amount);
+      this.setState({ txBeingSent: tx.hash });
+
+      // We use .wait() to wait for the transaction to be mined. This method
+      // returns the transaction's receipt.
+      const receipt = await tx.wait();
+
+      // The receipt, contains a status flag, which is 0 to indicate an error.
+      if (receipt.status === 0) {
+        // We can't know the exact error that made the transaction fail when it
+        // was mined, so we throw this generic one.
+        throw new Error("Transaction failed");
+      }
+
+      // If we got here, the transaction was successful, so you may want to
+      // update your state. Here, we update the user's balance.
+      await this._updateBalance();
+    } catch (error) {
+      // We check the error code to see if this error was produced because the
+      // user rejected a tx. If that's the case, we do nothing.
+      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+        return;
+      }
+
+      // Other errors are logged and stored in the Dapp's state. This is used to
+      // show them to the user, and for debugging.
+      console.error(error);
+      this.setState({ transactionError: error });
+    } finally {
+      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
+      // this part of the state.
+      this.setState({ txBeingSent: undefined });
+    }
+  }
+
+  // This method sends an ethereum transaction to transfer tokens.
+  // While this action is specific to this application, it illustrates how to
+  // send a transaction.
+  async _buyFood(to, weiToBuy) {
+    try {
+      // If a transaction fails, we save that error in the component's state.
+      // We only save one such error, so before sending a second transaction, we
+      // clear it.
+      this._dismissTransactionError();
+
+      // We send the transaction, and save its hash in the Dapp's state. This
+      // way we can indicate that we are waiting for it to be mined.
+      const tx = await this._marketContract.buy(to, { value: weiToBuy.toString() });
+      this.setState({ txBeingSent: tx.hash });
+
+      // We use .wait() to wait for the transaction to be mined. This method
+      // returns the transaction's receipt.
+      const receipt = await tx.wait();
+
+      // The receipt, contains a status flag, which is 0 to indicate an error.
+      if (receipt.status === 0) {
+        // We can't know the exact error that made the transaction fail when it
+        // was mined, so we throw this generic one.
+        throw new Error("Transaction failed");
+      }
+
+      // If we got here, the transaction was successful, so you may want to
+      // update your state. Here, we update the user's balance.
+      await this._updateBalance();
+    } catch (error) {
+      // We check the error code to see if this error was produced because the
+      // user rejected a tx. If that's the case, we do nothing.
+      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+        return;
+      }
+
+      // Other errors are logged and stored in the Dapp's state. This is used to
+      // show them to the user, and for debugging.
+      console.error(error);
+      this.setState({ transactionError: error });
+    } finally {
+      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
+      // this part of the state.
+      this.setState({ txBeingSent: undefined });
+    }
+  }
+
+  // This method sends an ethereum transaction to transfer tokens.
+  // While this action is specific to this application, it illustrates how to
+  // send a transaction.
+  async _feedPet(petId, foodAddress) {
+    try {
+      // If a transaction fails, we save that error in the component's state.
+      // We only save one such error, so before sending a second transaction, we
+      // clear it.
+      this._dismissTransactionError();
+
+      // We send the transaction, and save its hash in the Dapp's state. This
+      // way we can indicate that we are waiting for it to be mined.
+      const tx = await this._petContract.feed(petId, foodAddress);
+      this.setState({ txBeingSent: tx.hash });
+
+      // We use .wait() to wait for the transaction to be mined. This method
+      // returns the transaction's receipt.
+      const receipt = await tx.wait();
+
+      // The receipt, contains a status flag, which is 0 to indicate an error.
+      if (receipt.status === 0) {
+        // We can't know the exact error that made the transaction fail when it
+        // was mined, so we throw this generic one.
+        throw new Error("Transaction failed");
+      }
+
+      // If we got here, the transaction was successful, so you may want to
+      // update your state. Here, we update the user's balance.
+      await this._updateBalance();
+    } catch (error) {
+      // We check the error code to see if this error was produced because the
+      // user rejected a tx. If that's the case, we do nothing.
+      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
+        return;
+      }
+
+      // Other errors are logged and stored in the Dapp's state. This is used to
+      // show them to the user, and for debugging.
+      console.error(error);
+      this.setState({ transactionError: error });
+    } finally {
+      // If we leave the try/catch, we aren't sending a tx anymore, so we clear
+      // this part of the state.
+      this.setState({ txBeingSent: undefined });
+    }
+  }
+
+  // This method sends an ethereum transaction to transfer tokens.
+  // While this action is specific to this application, it illustrates how to
+  // send a transaction.
+  async _createPet(owner, petId) {
+    try {
+      // If a transaction fails, we save that error in the component's state.
+      // We only save one such error, so before sending a second transaction, we
+      // clear it.
+      this._dismissTransactionError();
+
+      // We send the transaction, and save its hash in the Dapp's state. This
+      // way we can indicate that we are waiting for it to be mined.
+      const tx = await this._petContract.createPet(owner, petId);
       this.setState({ txBeingSent: tx.hash });
 
       // We use .wait() to wait for the transaction to be mined. This method
