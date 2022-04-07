@@ -25,3 +25,4 @@
 - [ ] Update the front-end app completely (clean interaction bugs and remove unnecessary files from the boilerplate project)
 - [ ] Extend the existing test suite
 - [ ] Create github actions CI/CD (build, test and create build)
+- [ ] Find out how and try to reduce the transactio gas price
