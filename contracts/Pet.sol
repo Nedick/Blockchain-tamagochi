@@ -29,12 +29,14 @@ contract Pet is ERC721 {
         pets[petTokenId] = TamagocchiPet(block.timestamp);
     }
 
-    function feed(uint256 petTokenId, address foodAddress) public {
+    function feed(uint256 petTokenId) public {
+        // require(msg.sender == petCreator, "only pet creator can feed pets");
+        // require(pets[petTokenId].lastFeedTime + 86400 < block.timestamp, "pet is not hungry");
         require(msg.sender != ownerOf(petTokenId), "You are not owning this pet");
         require(block.timestamp - pets[petTokenId].lastFeedTime < 4*60*60, "Your pet is dead");
-        require(foodContract.balanceOf(foodAddress) > 0, "You do not have food tokens");
+        require(foodContract.balanceOf(msg.sender) > 0, "You do not have food tokens");
 
-        foodContract.burn(foodAddress, 1);
+        foodContract.burn(msg.sender, 1);
         pets[petTokenId].lastFeedTime = block.timestamp;
     }
 

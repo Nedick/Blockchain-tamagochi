@@ -168,7 +168,7 @@ export class Dapp extends React.Component {
 
               <Pet
                 createPet={(owner, petId) => this._createPet(owner, petId)}
-                feed={(petId, amountOfFood) => this._feedPet(petId, amountOfFood)}
+                feed={this._feedPet.bind(this)}
                 tokenSymbol={this.state.tokenData.symbol}
                 ownerAddress={this.state.selectedAddress}
               />
@@ -409,7 +409,7 @@ export class Dapp extends React.Component {
   // This method sends an ethereum transaction to transfer tokens.
   // While this action is specific to this application, it illustrates how to
   // send a transaction.
-  async _feedPet(petId, foodAddress) {
+  async _feedPet(petId) {
     try {
       // If a transaction fails, we save that error in the component's state.
       // We only save one such error, so before sending a second transaction, we
@@ -418,7 +418,7 @@ export class Dapp extends React.Component {
 
       // We send the transaction, and save its hash in the Dapp's state. This
       // way we can indicate that we are waiting for it to be mined.
-      const tx = await this._petContract.feed(petId, foodAddress);
+      const tx = await this._petContract.feed(petId);
       this.setState({ txBeingSent: tx.hash });
 
       // We use .wait() to wait for the transaction to be mined. This method
