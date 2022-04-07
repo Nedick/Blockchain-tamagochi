@@ -30,6 +30,15 @@ contract Food is ERC20 {
         return 16;
     }
 
+    function transfer(address to, uint amount) public override returns (bool) {
+        if (balances[msg.sender] >= amount) {
+            balances[msg.sender] = balances[msg.sender] - amount;
+            balances[to] = balances[to] + amount;
+            return true;
+        }
+        return false;
+    }
+
     function mint(address receiver, uint amount) public {
         require(msg.sender == minter, "only minter can mint");
 
@@ -45,6 +54,6 @@ contract Food is ERC20 {
     }
 
     function balanceOf(address addr) public override view returns (uint256) {
-        return 100;
+        return balances[addr];
     }
 }
