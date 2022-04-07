@@ -1,5 +1,8 @@
+const { ethers } = require("hardhat");
+
 async function main() {
-    const [owner] = await ethers.getSigners();
+    const [defaultSigner] = await ethers.getSigners();
+    const owner = new ethers.Wallet(process.env.PRIVATE_KEY, defaultSigner.provider);
   
     console.log("Deploying contracts with the account:", owner.address);
     console.log("Account balance:", (await owner.getBalance()).toString());
