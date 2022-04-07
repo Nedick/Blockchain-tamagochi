@@ -8,6 +8,12 @@ export class Pet extends React.Component {
             amount: 0
         };
     }
+
+    changePetToFeed(event) {
+        this.setState({
+            petToFeed: event.target.value
+        })
+    }
     
     render() {
         return (
@@ -61,26 +67,32 @@ export class Pet extends React.Component {
                         // This function just calls the transferTokens callback with the
                         // form's data.
                         event.preventDefault();
-            
-                        const formData = new FormData(event.target);
-                        const petId = formData.get("petId");
 
-                        if (petId) {
-                            this.props.feed(petId);
+                        if (this.state.petToFeed) {
+                            this.props.feed(this.state.petToFeed);
                         }
                     }}
                     >
                     <div className="form-group">
                         <label>Choose Pet to feed: {this.props.value}</label>
-                        <input
-                            className="form-control"
-                            type="number"
-                            step="1"
-                            name="petId"
-                            placeholder="petId"
-                            required
-                            onChange={e => this.setState({ amount: e.target.value })}
-                        />
+                        {
+                            this.props.myPets.map((pet, index) => {
+                                return (
+                                    <div key={index}>
+                                        <label>Pet - {pet.petId.toString()} - last feed time - {new Date(Number(pet.lastFeedTime.toString()) * 1000).toString()}</label>
+                                        <input
+                                            className="form-control"
+                                            type="radio"
+                                            name="petId"
+                                            value={pet.petId.toString()}
+                                            checked={this.state.petToFeed === pet.petId.toString()}
+                                            onChange={this.changePetToFeed.bind(this)}
+                                        />
+                                        {pet.id}
+                                    </div>
+                                )
+                            })
+                        }
                     </div>
                     <div className="form-group">
                         <input className="btn btn-primary" type="submit" value="Feed Pet" />

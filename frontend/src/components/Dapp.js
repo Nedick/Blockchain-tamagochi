@@ -168,6 +168,7 @@ export class Dapp extends React.Component {
 
               <Pet
                 createPet={(owner, petId) => this._createPet(owner, petId)}
+                myPets={this.state.myPets}
                 feed={this._feedPet.bind(this)}
                 tokenSymbol={this.state.tokenData.symbol}
                 ownerAddress={this.state.selectedAddress}
@@ -237,6 +238,7 @@ export class Dapp extends React.Component {
     // sample project, but you can reuse the same initialization pattern.
     this._initializeEthers();
     this._getTokenData();
+    this._getMyPets();
     this._startPollingData();
   }
 
@@ -292,6 +294,12 @@ export class Dapp extends React.Component {
     const priceInWei = await this._marketContract._weiToFoodDivider();
 
     this.setState({ tokenData: { name, symbol }, priceInWei });
+  }
+
+  async _getMyPets() {
+    const myPets = await this._petContract.myPets();
+
+    this.setState({ myPets });
   }
 
   async _updateBalance() {
@@ -479,9 +487,8 @@ export class Dapp extends React.Component {
         throw new Error("Transaction failed");
       }
 
-      // If we got here, the transaction was successful, so you may want to
-      // update your state. Here, we update the user's balance.
-      await this._updateBalance();
+      // Refetch all pets after create
+      await this._getMyPets();
     } catch (error) {
       // We check the error code to see if this error was produced because the
       // user rejected a tx. If that's the case, we do nothing.
