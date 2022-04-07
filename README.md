@@ -1,8 +1,6 @@
-⚠️ This project utilizes Hardhat development environment
-More information about Hardhat setup can be found here: https://hardhat.org/tutorial/creating-a-new-hardhat-project.html
+⚠️ This project utilizes [Hardhat](https://hardhat.org/tutorial/creating-a-new-hardhat-project.html) development environment!
 
-⚠️ This project uses OpenZeppelin contracts library
-Source: https://github.com/OpenZeppelin/openzeppelin-contracts
+⚠️ This project uses [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts) contracts library! 
 
 # Project setup:
 ### After checkout navigate to the project root and run the local blockchain node with this command:
